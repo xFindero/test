@@ -1,0 +1,39 @@
+<html>
+<title>Antibot System</title>
+
+<body>
+    <center>
+    <table width="270">
+        <tr>
+            <td align="center">
+                <font color="66FF00">Enter The Captcha Bellow And Click The Button "<font color=LEVEL>Confirm</font>" To Continue You Farm. You have <font color=LEVEL>120s.</font> to enter Captcha. If You are not entered Captcha during this time or entered wrong Captcha code - <font color=LEVEL>jail</font>. You Will Be Invulnerable Until You Enter The Captcha So No One Will Kill You!</font>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                You have <font color=LEVEL>2</font> attempts left
+            </td>
+        </tr>
+    </table>
+    </center>
+    <center>
+        <font color="66FF00">
+            <br>
+            <img src="L2UI_CH3.onscrmsg_pattern01_1" height="32" width="300">
+            <br><br><br>
+            <center>
+                <table bgcolor="FAFAFA" width="250">
+                    <tr>
+                        <td align="center"><font color=75F086>C</font><font color=2F4B80>J</font><font color=75F086>Q</font><font color=3FAB7E>7</font><font color=AB3F7E>P</font></td>
+                    </tr>
+                </table>
+                <br>
+                <edit var="captcha" width=110><br><br>
+            </center>
+            <button value="Confirm" action="bypass -h _captcha $captcha" width=80 height=26 back="L2UI_CT1.Button_DF_Down" fore="L2UI_ct1.button_df">
+            <img src="L2UI_CH3.onscrmsg_pattern01_2" height="32" width="300">
+        </font>
+    </center>
+</body>
+
+</html>
