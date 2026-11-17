@@ -3,13 +3,13 @@
 -- p.def без дебафу	24 258, з дебафом 8 247,  
 -- m.def без дебафу	 3 955, з дебафом 1 344, 
 ----------------------------------
-NxtTrgtDelay	=	10		-- in sec
-NxtTrgtHP		=	70		-- in %
-LastNxtTrgt		=	0		-- time when it used for last time
-FightRange		=	1400	-- range to find monsters
-idleTime		=	60		-- in min (inactivity time, go to rest point)
+NxtTrgtDelay			= 10		-- in sec
+NxtTrgtHP				= 70		-- in %
+LastNxtTrgt				= 0			-- time when it used for last time
+FightRange				= 1400		-- range to find monsters
+idleTime				= 60		-- in min (inactivity time, go to rest point)
+HPPercentToUseTrans		= 60		-- %  of HP to start Trasform Final Form
 stopScript		=	false
-weArePL			=	false
 atSpot0		=	false
 atSpot1		=	false
 atSpot2		=	false
@@ -39,6 +39,12 @@ RushSkills				=	{628, 998, 6292, 6296, 484, 994}	-- Warp-628, 998 - Blazing Boos
 FocusAttack				=	317									-- Focus Attack WL
 Rush					=	nil
 RushDist				=	550
+-----------------------------------
+Sharpshooting				=	521
+SoulGathering				=	625
+FinalForm					=	538
+PrideofKamael				=	1444
+SpreadWing					=	492
 -- ====================== GLOBAL SETTINGS ======================
 blackList			=	{"Lost Warden"}
 highPriorityList	=	{"Lost Assistant Guard"}
@@ -148,6 +154,7 @@ function UseSkillH(skill)
 	local UseSkill = GetSkills():FindById(skill)
 	if UseSkill and UseSkill:CanBeUsed() then
 		UseSkillRaw(skill, false, false)
+		Sleep(300)
 		Command("/useshortcut 1 4")
 		Sleep(200)
 		Command("/useshortcut 1 4")
@@ -290,7 +297,6 @@ function isAlive()
 		return true
 	else
 		ShowToClient(os.date("%X"), "DIED - Return to farm")
-		Sound()
 
 		if not IsPaused() then
 			SetPause(true)
@@ -365,7 +371,6 @@ function WeHaveBuff()
     local BUFF_RENEW_SEC = 55
     local me = GetMe()
   
-	--ShowToClient(os.date("%X"), "Class " .. me:GetClass(), 20)
 	-- 95 Necr, 94 Sorc, 110 SH
     if (me:GetClass() ==  94 or me:GetClass() ==  95 or me:GetClass() ==  110)  then		
 		buffID = buffMagID
@@ -392,23 +397,39 @@ function WeHaveBuff()
 end
 
 function HealthCheck()
-	if GetMe():IsInCombat() then return end
+	if GetMe():IsInCombat() then 
+        ShowToClient(os.date("%X"), "In Combat, skipping Heal", 20)
+        return 
+    end
 	--ShowToClient(os.date("%X"), "HealthCheck in", 20)
     local me = GetMe()
+    local myPet = GetPet()
     local timeNow = GetTime()
     local delta = timeNow - HealLastUsed
 
     if (me:GetHpPercent() <= HealHpPercent or 
         me:GetMpPercent() <= HealMpPercent or 
-        me:GetCpPercent() <= HealCpPercent) 
+        me:GetCpPercent() <= HealCpPercent ) 
         and not me:IsInCombat() and delta >= HealCooldown then
         
         ClickAndWait("_bbshome", "")
         ClickAndWait("voice .bufferservice", "")
         ClickAndWait("voice .bufferservice t p h", "")
+        if myPet ~= nil then
+			--if myPet:GetHpPercent() <= HealHpPercent then
+            ClickAndWait("voice .bufferservice t s u Samon", "");
+            ClickAndWait("voice .bufferservice t s h", "");
+        --else
+            --if myPet ~= nil then
+                --ShowToClient(os.date("%X"), "Pet no need to Heal. %" .. myPet:GetHpPercent(), 20)
+            --else
+                --ShowToClient(os.date("%X"), "No pet to heal", 20)
+            --end
+        end
         HealLastUsed = GetTime()
+    --else
+        --ShowToClient(os.date("%X"), "No need to Heal. Me: %" .. me:GetHpPercent() .. " Pet: %" .. (myPet ~= nil and myPet:GetHpPercent() or "N/A"), 20)
     end
-	--ShowToClient(os.date("%X"), "HealthCheck out", 20)
 end
 
 function escapeDeath()
@@ -674,15 +695,44 @@ function farmKamaloka(spotRange)
 					if target:GetDistance() >= RushDist and Rush then
 						UseSkillH(Rush)
 					end
-					if target:GetName() == "Lost Captain" and target:GetHpPercent() <= 2 and not weArePL then
-						SetPause(true)
-						ShowToClient(os.date("%X"), "Lost Captain's HP <= 1%, we not a PL")
-						stopScript = true
-						local timeout = GetTime() + 20000
-						while GetMe():GetRangeTo(12092, -174901, -9945) < 1500 and GetTime() < timeout do
-							ShowToClient(os.date("%X"), "using Blessed Scroll of Escape")
-							UseItem(1538); -- Blessed Scroll of Escape
-							Sleep(3500)
+					if target:GetName() == "Lost Captain" then
+						if target:GetHpPercent() <= HPPercentToUseTrans and ( IamArba or IamSB ) and not FFused then
+							ShowToClient(os.date("%X"), "my target HP < " .. HPPercentToUseTrans .. ", I am: " .. (IamArba and "Arba. " or "SB. ") .. "FFused: " .. tostring(FFused), 20);
+							if IamArba then
+								ShowToClient(os.date("%X"), "I am Arba, using Sharpshooting + SoulGathering + FinalForm", 20)
+								SetPause(true)
+								UseSkillH(Sharpshooting)
+								Sleep(500)
+								UseSkillH(SoulGathering)
+								Sleep(500)
+								UseSkillH(FinalForm)
+								FFused = true
+								SetPause(false)
+							end
+							if IamSB then
+								ShowToClient(os.date("%X"), "I am SB, using PrideofKamael + SoulGathering + FinalForm", 20)
+								SetPause(true)
+								TargetMe();
+								Sleep(500)
+								UseSkillH(PrideofKamael)
+								Sleep(500)
+								UseSkillH(SoulGathering)
+								Sleep(500)
+								UseSkillH(FinalForm)
+								FFused = true
+								SetPause(false)
+							end
+						end
+						if target:GetHpPercent() <= 2 and not weArePL then
+						 	SetPause(true)
+						 	ShowToClient(os.date("%X"), "Lost Captain's HP <= 2%, we not a PL and we have no PA")
+						 	stopScript = true
+						 	local timeout = GetTime() + 20000
+						 	while GetMe():GetRangeTo(12092, -174901, -9945) < 1500 and GetTime() < timeout do
+						 		ShowToClient(os.date("%X"), "using Blessed Scroll of Escape")
+						 		UseItem(1538); -- Blessed Scroll of Escape
+						 		Sleep(3500)
+						 	end
 						end
 					end
 				end
@@ -692,14 +742,12 @@ function farmKamaloka(spotRange)
 
 		Sleep(1400 + math.random(-700, 900))
 	end
-
 	SetPause(true)
 	restoreSettings()
 end
 
 -- Генерація 8 точок
 function GenerateOctagon(newradius, startLoc)
-		
     octagonPoints = {}
 	
     for i = 0, 7 do
@@ -711,7 +759,6 @@ function GenerateOctagon(newradius, startLoc)
         
         table.insert(octagonPoints, {X = x, Y = y, Z = startLoc.Z})
     end
-    --ShowToClient(os.date("%X"), "Octagon generated with 8 points, radius " .. newradius, 20)
 end
 
 
@@ -722,15 +769,11 @@ function MoveInOctagonOnce(radius)
 	local toRad			=	math.floor(radius/layerWidth)
 	local startLoc		= GetMe():GetLocation()
 	
-	--ShowToClient(os.date("%X"), "Octagon layers: " .. toRad, 20)
-	
 	for counter=1, toRad do
 		--ShowToClient(os.date("%X"), "Layer: " .. counter, 20)
 		GenerateOctagon(counter*layerWidth, startLoc)
 	
 		if #octagonPoints == 0 then return end
-		
-		
 		
 		for i = 1, 7 do
 			local point = octagonPoints[i]
@@ -823,12 +866,48 @@ function SmartLoot(radius)
     return picked
 end
 
+function doWeHavePA()
+	
+end
+
 function init()
-	startTime = GetTime()
-	Rush = checkRushSkill(RushSkills)
-	counter = 0
+	me			= GetMe()
+	weArePL		= false
+	FFused		= false
+	IamSB		= false
+	IamArba		= false
+	startTime 	= GetTime()
+	Rush		= checkRushSkill(RushSkills)
+	counter		= 0
+
 	ActivateSoulShot(1467,true)	--1467	Soulshot (S-Grade)
 	ActivateSoulShot(3952,true)	--3952	Blessed Spiritshot (S-Grade)
+
+	--UseItem(31080); -- Phoenix Agathion Seal Bracelet
+	--UseSkill(21191, false, false); -- Release Seal on Agathion - Phoenix
+	------------
+	if me:GetClass() == 89	then	-- Class WL - завантажити конфігурацію для WL
+		-----------Get profile -----------
+		SCONFIG_FILE = GetDir() .. 'config\\D__Lineage_2_HF_clear_System_\\WL.l2t';
+		--ShowToClient(os.date("%X"), "conf: " .. SCONFIG_FILE, 20)
+        if L2TConfig.LoadConfig(SCONFIG_FILE) then
+			ShowToClient(os.date("%X"), "WL Config loaded!", 3)
+		else
+			ShowToClient(os.date("%X"), "[Error] WL Config not loaded!")
+		end
+	end
+	if me:GetBaseClass() == 133	then	-- Class SB/Judik
+		if me:GetClass() == 132 or me:GetClass() == 133	then	-- Class SB
+			ShowToClient(os.date("%X"), "We are SB", 3)
+			IamSB = true
+		else
+			ShowToClient(os.date("%X"), "We are not SB or Arba!")
+		end
+	end
+	if me:GetClass() == 134	then	-- Class Arbalester
+			ShowToClient(os.date("%X"), "We are Arba", 3)
+			IamArba = true
+	end
 	if GetMe():IsMyPartyMemberMaster() then
 		weArePL = true
 		Command("/rbsstart")
@@ -880,7 +959,6 @@ while true do
 			SmartLoot(300)
 			Command("/rbsdmp")
 		end
-		
 		break
 	end
 end
